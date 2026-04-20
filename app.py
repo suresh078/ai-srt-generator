@@ -7,27 +7,27 @@ app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Load Whisper model once (important)
-model = WhisperModel("large-v3", compute_type="int8")
-
-def generate_srt(segments, filename):
-    srt_path = f"{filename}.srt"
-    with open(srt_path, "w", encoding="utf-8") as f:
-        for i, seg in enumerate(segments, start=1):
-            start = seg.start
-            end = seg.end
-            text = seg.text
-
-            f.write(f"{i}\n")
-            f.write(f"{format_time(start)} --> {format_time(end)}\n")
-            f.write(text + "\n\n")
-    return srt_path
+# Optimized Whisper model for FREE hosting (important)
+model = WhisperModel(
+    "small",
+    compute_type="int8",
+    cpu_threads=2
+)
 
 def format_time(seconds):
     hrs = int(seconds // 3600)
     mins = int((seconds % 3600) // 60)
     secs = seconds % 60
     return f"{hrs:02}:{mins:02}:{secs:06.3f}".replace('.', ',')
+
+def generate_srt(segments, filename):
+    srt_path = f"{filename}.srt"
+    with open(srt_path, "w", encoding="utf-8") as f:
+        for i, seg in enumerate(segments, start=1):
+            f.write(f"{i}\n")
+            f.write(f"{format_time(seg.start)} --> {format_time(seg.end)}\n")
+            f.write(seg.text + "\n\n")
+    return srt_path
 
 @app.route("/")
 def index():
@@ -36,7 +36,8 @@ def index():
 @app.route("/upload", methods=["POST"])
 def upload():
     file = request.files["file"]
-    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+    unique_name = str(uuid.uuid4())
+    filepath = os.path.join(UPLOAD_FOLDER, unique_name + "_" + file.filename)
     file.save(filepath)
 
     segments, info = model.transcribe(filepath)
