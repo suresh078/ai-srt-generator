@@ -1,4 +1,0 @@
-Flask
-faster-whisper
-ffmpeg-python
-gunicorn
